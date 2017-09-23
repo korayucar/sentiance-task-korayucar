@@ -30,6 +30,11 @@ To generate a master data set run;
 ./generateMasterDataSet.sh <master-data-set-directory> <file-size-in-mb> <folder-name-1>,<folder-size-1>,...,<folder-size-n>,<folder-name-n>
 ```
 
+To update a master data set run; 
+```zsh
+./updateMasterDataSet.sh <master-data-set-directory> <file-size-in-mb> <folder-name-1>,<folder-size-1>,...,<folder-size-n>,<folder-name-n>
+```
+
  
 
 

@@ -5,5 +5,5 @@ package xyz.korayucar.sentiance.random.task;
  */
 @FunctionalInterface
 public interface FileAppenderTask {
-    appendToFile(Byte)
+//    appendToFile(Byte)
 }
