@@ -1,4 +1,4 @@
-package xyz.korayucar.sentiance.random;
+package xyz.korayucar.sentiance;
 
 import java.nio.charset.StandardCharsets;
 

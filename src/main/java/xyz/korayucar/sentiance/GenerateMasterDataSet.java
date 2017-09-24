@@ -1,4 +1,4 @@
-package xyz.korayucar.sentiance.random;
+package xyz.korayucar.sentiance;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -6,8 +6,8 @@ import com.google.gson.Gson;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import xyz.korayucar.sentiance.random.generator.AlphanumericStringGenerator;
-import xyz.korayucar.sentiance.random.generator.RandomLineGenerator;
+import xyz.korayucar.sentiance.generator.AlphanumericStringGenerator;
+import xyz.korayucar.sentiance.generator.RandomLineGenerator;
 
 import java.io.File;
 import java.io.IOException;

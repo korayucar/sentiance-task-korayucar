@@ -1,4 +1,4 @@
-package xyz.korayucar.sentiance.random.generator;
+package xyz.korayucar.sentiance.generator;
 
 import java.util.Objects;
 import java.util.Random;

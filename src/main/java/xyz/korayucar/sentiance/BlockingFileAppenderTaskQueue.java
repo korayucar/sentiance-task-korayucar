@@ -1,4 +1,4 @@
-package xyz.korayucar.sentiance.random;
+package xyz.korayucar.sentiance;
 
 /**
  * Created by koray on 24/09/17.
