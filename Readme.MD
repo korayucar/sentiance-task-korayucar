@@ -96,25 +96,53 @@ There is not retry mechanism implemented in the assignment but there are multipl
 
 ### Data Refresh System
 
-
 I propose a caching layer in front of foursquare api. This caching layer will update from foursquare api whenever there is a cold miss on the cache. The caching layer has to be a best effort since it has no way of knowing a new venue has been added to the foursquare api or one is removed.
 
-Cache layer will hold 2 kinds of geospatial data. One of them holds the records of venues received from foursquare the other holds the previous requests sent to the foursquare API. Both cache storages should support;
+Cache layer will hold 2 kinds of geospatial data. One of them holds the records of venues received from foursquare and the other holds the previous successful queries sent to the foursquare API. Both cache storages should support;
 * Efficient range query. I our case the range is a circle by the nature of GPS but the optimisation to use smallest enclosing rectangle will help with the simplicity/efficiency of spatial indexing.
 * Maximum time to live of 30 days. That is automatically handled by the cache.
 * Optionally caching layers can be synchronised for added reliability. Whenever we query the venues all results of all the queries in queries cache should be available in venue cache. This will create additional engineering complexity so this will require cost/benefit analysis. We need to make transactional updates to both caches to keep them correct at all times. For example if I am able to delete all caches safely in case of an incident I would not like to maintain consistency.
 
-In general there is a trade off between the confidence of the correctness of cache hit and the number of requests sent to the foursquare api. We can not make the trade of go away but we can implement confidence calculation strategies that allows us to chose how much of each we prefer. To be able to make this configurable we should be able to calculate the confidence on cache hit. The higher the confidence level we want the more times we will query the foursquare api and them more data we will keep in our caches. There are arbitrarily many ways of doing it, I will propose 2;
-1. We can retrieve all the previous searches that inside the circle defined by accuracy/location pair. We can assign  predetermined coeeficients to the contribition of depending on how long before those searches has been made and how far away the search has been made. Average of top three contributors is the confidence level that our venue cache has the data.
-2. We can retrieve up to ten closest searches previously made that are closest the new query location regardless of accuracy. After that we find the convex hull of these up to ten search locations. Then we calculate a score on the confidence based on the distance from convex hull to the new search point and if it is inside or outside. We can also elaborate with the freshness of old searches. Since this query is not a range query it eliminates some complexity from the cache layer.
+In general there is a trade off between the level confidence on the correctness of cache hit and the number of requests sent to the foursquare api. We can not make the trade of go away but we can implement confidence calculation strategies that allows us to chose how much of each we prefer. To be able to make this configurable we should be able to calculate the confidence on cache hit. The higher the confidence level we want; the more times we will query the foursquare api and them more data we will keep in our caches. There are arbitrarily many ways of doing it, I will propose 2;
+1. We can retrieve all the previous searches that inside the circle defined by accuracy/location pair. We can assign  predetermined coeeficients to the contribition of each query depending on how long before it has been made and how far away it was. Average of top three contributors is the confidence level that our venue cache has the data.
+2. We can retrieve up to ten closest searches previously made that are closest the new query location regardless of accuracy. After that we find the convex hull of these up to ten search locations. Then we calculate a score on the confidence based on the distance from convex hull to the new search point and if it is inside or outside. We can also elaborate with the freshness of old searches. Since this query is not a range query it eliminates some complexity from the cache layer. Note that; even if it is inside the convex hull, too big of a distance is not a positive trait.
 
+#### The accuracy of GPS signal.
+Obviously the inaccuracy cannot be eliminated. Simple client side improvements can be applied like collecting multiple data points, keeping last accurate signal for some time etc. But the GPS inaccuracy is inherent so not much we can do about it except enhancing confidence calculations by it.
+
+#### The Geospatial Cache Mechanism
+This cache mechanism is just a geospatial database in essence. I am not well informed on GIS but I presume there are external tools that can provide it. There is a menu in wikipedia to choose from [here](https://en.wikipedia.org/wiki/Spatial_database). I can not comment on pros and cons of them. However; if decision is made to manually implement geospatial algorithm it can be made easily on top of an arbitrary data storage also. It is important to note that implementing indexing logic outside the actual data storage machine will have significant performance costs.
+
+Implementation of an R-Tree will satisfy all our needs including the optional ones. Depending on how much we can relax our requirements a simple 2 dimensional Kd-Tree can also provide adequate performance. Especially for the query cache hand written efficient but less accurate modified data structures can be considered. That is way too deep of a concept to dwell on in this document.
 
 ### Methods to Improve Accuracy/Performance.
 1. When we query for the previous queries of which the venues are cached the accuracy value may be too high, consequently if we query with an area the number of hits should be limited to a number. Also search mechanism should be smart enough to stop searching in a smaller radious many matches has already been found.
-2. A mechanism can be implemented for invalidating unreliable caches in order to keep them up to date. I.e. If this is available to the end user and there is a signal that the result was wrong cache invalidation should be applied. For example such signal may be immediate refresh of the query by the end user.
+2. A feedback mechanism can be implemented for invalidating unreliable caches in order to keep them up to date. I.e. If this is available to the end user and there is a signal that the result was wrong cache invalidation should be applied. For example such signal may be an immediate refresh of the page by the end user suggesting they see unexpected results. 
 3. A mechanism can be implemented to warm up cache at times query to the foursquare api cheaper than usual (literally cheaper, or in a period we are far away from the api throttling limits).
-4. A mechanism can be implemented to initialize the cache with equidistant queries.
-5. 
+4. A mechanism can be implemented to initialize the cache with equidistant and purposefully incaccurate queries.
+
+
+### For The Bonus
+
+I am not able to see the algorithmic challange in this. Simplest implementation would be to find the closest one to the location. That is a linear search. That is O(N) time. There can still be many factors like the venue popularity, time of the day, query makers histroical behaviour, a feedback data that reports mismatches etc. With the additional data, mapping can be improved with learning techniques. As long as the data is limited to 1 query location and n venue locations I don't have anything better than choosing the closest one. One little point is that finding the exact distance between two points is expensive computationally. We can even eliminate the need to use multiplication if approximations are acceptable. If we can sacrifice correctness in edge cases, we can use octagonal boundaries to do the comparison. Otherwise ; this:
+
+```java
+function findVenue(Location query, List<Location> venues){
+    if(venues == null || venues.isEmpty())
+        throw new IllegalArgumentException("no venue to choose from.");
+    return venues.stream().min(new Comparator<Location>() {
+            @Override
+            public int compare(Location v1, Location v2) {
+                return getDistanceIndicator(v1, query) - getDistanceIndicator(v2, query);
+            }
+        }).orElseThrow(()->new IllegalStateException("At least one venue must have been the closest."));
+}
+
+private int getDistanceIndicator(Location v, Location p) {
+    return (p.x - v.x)*(p.x - v.x) +(p.y - v.y)*(p.y - v.y);
+}
+
+```
 
 ![See the diagram. If you dont have a proper reader open the file named system_design_diagram.png](system_design_diagram.png)
 
