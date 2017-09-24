@@ -1,6 +1,5 @@
 package xyz.korayucar.sentiance.random.generator;
 
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -11,7 +10,6 @@ public class AlphanumericCharacterGenerator {
 
     ThreadLocalRandom random;
 
-    @Inject
     AlphanumericCharacterGenerator(ThreadLocalRandom threadLocalRandom){
 
     }
@@ -19,9 +17,10 @@ public class AlphanumericCharacterGenerator {
     private static final char [] ALPHANUMERIC =
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".toCharArray();
 
-    static Stream<Char> generator(){
-        new Random().ints(123)
-    }
+//    static Stream<Char> generator(){
+//        new Random().ints(123);
+//        Files.lines()
+//    }
 
 
 

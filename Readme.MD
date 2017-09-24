@@ -27,7 +27,7 @@ I put helper shell scripts on top level directory. You can of course prefer to r
 
 To generate a master data set run; 
 ```zsh
-./generateMasterDataSet.sh <master-data-set-directory> <file-size-in-mb> <folder-name-1>,<folder-size-1>,...,<folder-size-n>,<folder-name-n>
+./generateMasterDataSet.sh <master-data-set-directory> -size <file-size-in-mb> -data <folder-name-1>,<folder-size-1>,...,<folder-size-n>,<folder-name-n>
 ```
 
 To update a master data set run; 
@@ -53,15 +53,13 @@ A minimal metadata is defined. Metadata is atomically written and read with a lo
 **rationale:** It is possible to query the file system to monitor file size. That would not work in this case because there may be multiple appenders writing to the same file simultaneously. Querying file system for data size change on a file does cannot reveal how much of the additional data is written by each task. Also that will be an extra hit on the filesystem that is possibly the bottleneck.
 
 To overcome this limitation each file appender task keeps track of the amount of data it has written. Thus the file encoding must be known by the file appender.
-  
-#### <a name="approach_discussion"></a>Reaching to a Given State Incrementally vs Applying Given Changes Towards Undetermined State  
-
+   
 ## Limitations/Things to Be Improved
 
 1. The operation to write to the file is not idempotent. Any failure that left task incomplete can not repair itself on retry. Since there may be data already written on file during the failed execution a task that that only knows how much more data to write to each file will overflow data on retry.
 There is not retry mechanism implemented in the assignment but there are multiple ways to overcome this issue;
     * Each file can be locked before executing a file append task. So that multiple append tasks are not executed on same file. The task should also read and atomically persist the finishing size of the file before starting the task. This will make the task idempotent with cost of scalability. Loss of scalability is reasonable in most use cases. The size of each file is subject to configuration. Total data size can still grow to multiple files anyway.
-    * There can be a check and repair task that executes when no other writing task is executed on a master data set. This task can receive the latest registered state of the master data set and queue new data update tasks. Actually all project could be composed of this kind of a task; see [this](#approach_discussion) for an evaluation of this approach. 
+    * There can be a check and repair task that executes when no other writing task is executed on a master data set. This task can receive the latest registered state of the master data set and queue new data update tasks. 
   
 2. It is not good to store metadata in hidden files. It should be persisted on proper DBs. Both SQL and NoSql dbs can be used. Also there is not much of a scalability concern. Metadata can be quite small.
 
@@ -90,3 +88,25 @@ There is not retry mechanism implemented in the assignment but there are multipl
     I made use of shared metadata in order to determine the last registered file sizes.
     * The final number of files and their sizes are precalculated in order to be able to create well defined tasks that can execute independently for each file.
     * The granularity of file append tasks can be further reduced depending in the performance needs.
+    
+# PART 2
+
+### Data Refresh System
+
+
+I propose a caching layer in front of foursquare api. This caching layer will update from foursquare api whenever there is a cold miss on the cache. The caching layer has to be a best effort since it has no way of knowing a new venue has been added to the foursquare api or one is removed.
+
+This cache layer will hold 2 kinds of geospatial data. One of them holds the records of venues received from foursquare the other holds the previous requests sent to the foursquare API. Both cache storages should support;
+* Efficient range query. I our case the range is a circle by the nature of GPS but the optimisation to use smallest enclosing rectangle will help with the simplicity/efficiency of spatial indexing.
+* Maximum time to live of 30 days.
+
+### Methods to Improve Accuracy/Performance.
+
+
+![System Design](system_design_diagram.png)
+
+
+
+
+
+
