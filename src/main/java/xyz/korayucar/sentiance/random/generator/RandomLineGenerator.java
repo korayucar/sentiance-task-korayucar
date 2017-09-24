@@ -7,5 +7,5 @@ import java.util.stream.Stream;
  */
 @FunctionalInterface
 public interface RandomLineGenerator {
-    Stream<String> getNewStream();
+    Stream<String> lines();
 }

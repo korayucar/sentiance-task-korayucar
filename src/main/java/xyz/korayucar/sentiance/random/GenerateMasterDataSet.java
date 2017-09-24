@@ -2,12 +2,20 @@ package xyz.korayucar.sentiance.random;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.google.gson.Gson;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import xyz.korayucar.sentiance.random.generator.AlphanumericStringGenerator;
+import xyz.korayucar.sentiance.random.generator.RandomLineGenerator;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Created by koray on 23/09/17.
@@ -15,6 +23,7 @@ import java.util.Map;
 public class GenerateMasterDataSet {
 
     private static final String PARAMETER_DELIMETER = ",";
+    private static final int CHARS_PER_LINE = 20;
 
     private Logger logger = LogManager.getLogger(GenerateMasterDataSet.class);
 
@@ -27,8 +36,6 @@ public class GenerateMasterDataSet {
     @Parameter(required = true,names="-data")
     String dataFolders;
 
-
-
     public static void main(String... args) {
         GenerateMasterDataSet generateMasterDataSet = new GenerateMasterDataSet();
         JCommander.newBuilder().addObject(generateMasterDataSet).build().parse(args);
@@ -36,10 +43,22 @@ public class GenerateMasterDataSet {
     }
 
     private void run() {
-        Map<String, Integer> dataSizes = parseDataSizes();
+        DataSetStatus dataStatus = parseDataSizes();
         checkMasterDataDirectory();
+        writeAimedDataSetStatusToMetadata(dataStatus);
+        RandomLineGenerator generator = createRandomLineGenerator();
+    }
 
+    private RandomLineGenerator createRandomLineGenerator() {
+        return new AlphanumericStringGenerator(new Random(), CHARS_PER_LINE );
+    }
 
+    private void writeAimedDataSetStatusToMetadata(DataSetStatus dataStatus) {
+        try {
+            FileUtils.writeStringToFile(Paths.get(masterDataSetLocation , "meta" ).toFile() ,new Gson().toJson(dataStatus), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException("Cannot write metadata",e);
+        }
     }
 
     private void checkMasterDataDirectory() {
@@ -49,7 +68,7 @@ public class GenerateMasterDataSet {
             throw new IllegalStateException("Master data set directory is non empty and contains data.");
     }
 
-    private Map<String, Integer> parseDataSizes() {
+    private DataSetStatus parseDataSizes() {
         logger.info("parsing folder sizes.");
         Map<String, Integer> dataSizes = new HashMap<>();
         String[] dataFolderParams = dataFolders.split(PARAMETER_DELIMETER);
@@ -57,13 +76,13 @@ public class GenerateMasterDataSet {
             throw new IllegalArgumentException("Each folder must have a matching data size defined.");
         for(int i = 0 ; i < dataFolderParams.length ; i+=2) {
             if (dataFolderParams[i].isEmpty())
-                throw new IllegalArgumentException("empty folder name is not allowed.");
+                throw new IllegalArgumentException("Empty folder name is not allowed.");
             try {
                     dataSizes.put(dataFolderParams[i], Integer.parseInt(dataFolderParams[i+1]));
             }catch (NumberFormatException e){
                 throw new IllegalArgumentException(" Data size must be a number", e);
             }
         }
-        return dataSizes;
+        return new DataSetStatus(dataSizes);
     }
 }

@@ -16,4 +16,12 @@ public class GenerateMasterDataSetFunctionalTest {
         FileUtils.deleteDirectory(new File(masterDataSetDirectory));
         GenerateMasterDataSet.main(masterDataSetDirectory, "-size", "2", "-data","xx,5,yy,7");
     }
+
+    @Test(expected = IllegalStateException.class)
+    public void main_ExistingMasterDataSet_FailProperly() throws Exception {
+        String masterDataSetDirectory = "test/abc";
+        FileUtils.deleteDirectory(new File(masterDataSetDirectory));
+        GenerateMasterDataSet.main(masterDataSetDirectory, "-size", "2", "-data","xx,5,yy,7");
+        GenerateMasterDataSet.main(masterDataSetDirectory, "-size", "2", "-data","xx,5,yy,7");
+    }
 }
