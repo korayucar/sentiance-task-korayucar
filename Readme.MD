@@ -17,7 +17,7 @@
 * Length of each line is irrelevant. Keeping them of cosntant legnth is ok.
 * Filenames are irrelevant.
 * I can put metadata in to the master data set directory. 
-* Standard file system is used in implementation but simple refactor will enable the use of network file systems. Relevant abstractions are made in code. Design discussion avoids this assumption.
+* Standard file system is used in implementation but simple refactor will enable the use of network file systems. Design discussion avoids this assumption.
 * Storage medium allows multiple appenders.
 * Tester has unix like environment.
 
@@ -27,15 +27,20 @@ I put helper shell scripts on top level directory. You can of course prefer to r
 
 To generate a master data set run; 
 ```zsh
-./generateMasterDataSet.sh <master-data-set-directory> -size <file-size-in-mb> -data <folder-name-1>,<folder-size-1>,...,<folder-size-n>,<folder-name-n>
+./generateMasterDataSet.sh <master-data-set-directory> -size <file-size-in-mb> -data <folder-name-1>,<folder-size-1>,...,<folder-name-n>,<folder-size-n>
 ```
 
 To update a master data set run; 
 ```zsh
-./updateMasterDataSet.sh <master-data-set-directory> <file-size-in-mb> <folder-name-1>,<folder-size-1>,...,<folder-size-n>,<folder-name-n>
+./updateMasterDataSet.sh <master-data-set-directory> -data <folder-name-1>,<folder-size-1>,...,<folder-name-n>,<folder-size-n>
 ```
 
  
+To backup a master data set run; 
+```zsh
+./backupMasterDataSet.sh <master-data-set-directory> -destination <backup-directory>
+```
+
 
 
 ## Design Decisions
@@ -53,7 +58,8 @@ A minimal metadata is defined and persisted to root directory.
 **rationale:** It is possible to query the file system to monitor file size. That would not work in this case because there may be multiple appenders writing to the same file simultaneously. Querying file system for data size change on a file does cannot reveal how much of the additional data is written by each task. Also that will be an extra hit on the filesystem that is possibly the bottleneck.
 
 To overcome this limitation each file appender task keeps track of the amount of data it has written. Thus the file encoding must be known by the file appender.
-   
+#### No Explicit Use Of ExecuterService/ThreadPool
+**rational** Parallel streams work pretty good.
 ## Limitations/Things to Be Improved
 
 1. The operation to write to the file is not idempotent. Any failure that left task incomplete can not repair itself on retry. Since there may be data already written on file during the failed execution a task that that only knows how much more data to write to each file will overflow data on retry.
@@ -75,24 +81,16 @@ There is not retry mechanism implemented in the assignment but there are multipl
 
 8. Metadata should be atomically written and read with a lock mechanism. Metadata is locked briefly while the new state of the master data set is calculated. Thus there is almost no performance hit. This issue is gone if a proper ACID db is used.
 
-
+9. If you are on conventional storage (even ssd), do not run tasks in parallel. That is performance loss almost always.
 
 
 ### 1.1 Data Generation
-
-####1.1.1 Design Decisions
-    * Master Dataset Creator is composed of validation, master dataset directory creation and delegation of file creation tasks to data update tool.
-    * Random generation is done by a ThreadLocalRandom generator as it is more performant than both Random and SecureRandom generators.
-###1.2 Data Update
-
-
-####1.2.2 Design Decisions
-    
-    I made use of shared metadata in order to determine the last registered file sizes.
-    * The final number of files and their sizes are precalculated in order to be able to create well defined tasks that can execute independently for each file.
-    * The granularity of file append tasks can be further reduced depending in the performance needs.
-    
-# PART 2
+Virtually implemented same as data update job. Only difference is that there was zero data before update.
+### 1.2 Data Update
+Implemented by dividing whole process into individual file update tasks and running them through streams api leveragin fork/join pool paralellism implicitly.
+#### 1.3 Data Backup
+Made a very simple implementation. Scalability is not demonstrated in this section.
+# PART 2.1
 
 ### Data Refresh System
 
@@ -146,6 +144,20 @@ private int getDistanceIndicator(Location v, Location p) {
 
 ![See the diagram. If you don't have a proper markdown reader open the file named system_design_diagram.png](system_design_diagram.png)
 
+## PART 2.2
+
+### Would these change once the data size gets larger? If so, how?
+Not only by the change of data size. If we are able to use scalable storage services that can provide higher throughput. Then the computational resources becomes bottleneck. The software I implemented is already designed to highlight scalability concerns.I would create a distributed computing system with producer and consumer nodes and a scalable queue system. Producers would submit the individual file append tasks to the queue, consumers would read those tasks and execute them. This way I would scale to much higher data sizes. This also means that the directory structure of the master data set is virtual and provided by a storage service that is capable of storing master data set files in different physical devices. Preferably close to the consumer machines. Single producer may be sufficient depending on scale.
+
+### How would you handle a data size that becomes too large to hold on a single machine on local disks?
+Already answered above, I would use a distributed scalable storage service like HDFS, S3 or GFS.
+
+### Would there be libraries or tools that you could use to help out? If so, which ones and how could they help?
+* I could use HDFS, S3, GFS for storage. 
+* I could use SQS or Spark as queue service. 
+* I could change the programming design to implement this as a map reduce job to leverage many existing tools to monitor the state of the map/reduce process. 
+* I could use kubernetes to launch many identical producer/consumer machines and manage them.
+* I could use any ACID database to hold metadata.
 
 
 

@@ -7,58 +7,61 @@ import org.apache.logging.log4j.Logger;
 import xyz.korayucar.sentiance.generator.AlphanumericStringGenerator;
 import xyz.korayucar.sentiance.generator.RandomLineGenerator;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Random;
 
 /**
  * Created by koray on 23/09/17.
  */
-public class GenerateMasterDataSet extends UpdateMasterDataSet{
+public class UpdateMasterDataSet {
 
-    private Logger logger = LogManager.getLogger(GenerateMasterDataSet.class);
+    protected static final int CHARS_PER_LINE = 2000;
 
-    @Parameter(required = true , names="-size")
-    int maxFileSizeInMB;
+    private Logger logger = LogManager.getLogger(UpdateMasterDataSet.class);
 
+    @Parameter(required = true)
+    String masterDataSetLocation;
 
-    public static void main(String... args) throws InterruptedException {
-        LogManager.getRootLogger().info("Running with args:" + Arrays.toString(args));
-        GenerateMasterDataSet generateMasterDataSet = new GenerateMasterDataSet();
+    @Parameter(required = true,names="-data")
+    String dataFolders;
+
+    public static void main(String... args) throws InterruptedException, IOException {
+        LogManager.getRootLogger().info("Running update task with args:" + Arrays.toString(args));
+        UpdateMasterDataSet generateMasterDataSet = new UpdateMasterDataSet();
         JCommander.newBuilder().addObject(generateMasterDataSet).build().parse(args);
         generateMasterDataSet.run();
     }
 
-    private void run() throws InterruptedException {
-        MetadataHandler.checkMasterDataDirectory(masterDataSetLocation);
-        validateFileSize();
-        DataSet aimedDataStatus = DataDefinitionCommandParser.parseCommand(dataFolders, maxFileSizeInMB);
-        MetadataHandler.writeAimedDataSetStatusToMetadata(aimedDataStatus, masterDataSetLocation);
-        generateData(aimedDataStatus);
+    private void run() throws InterruptedException, IOException {
+        DataSet currentState = MetadataHandler.readCurrentMetaData(masterDataSetLocation);
+        DataSet update = DataDefinitionCommandParser.parseCommand(dataFolders,currentState.getFileSizeInMB());
+        DataSet finalState = new DataSet(currentState);
+        finalState.incrementDataSize(update);
+        MetadataHandler.writeAimedDataSetStatusToMetadata(finalState, masterDataSetLocation);
+        generateData(currentState, update);
     }
 
-    private void generateData(DataSet aimedDataStatus) throws InterruptedException {
+
+    private void generateData(DataSet currentState, DataSet update) throws InterruptedException {
         new DefaultFileAppendJobGeneratorBuilder()
                 .setCalculator(new AlphanumericUtf8DataSizeCalculator())
                 .setGenerator(createRandomLineGenerator())
                 .setEncoding(SupportedEncoding.ALPHANUMERIC_UTF_8)
                 .setMasterDataSet(Paths.get(masterDataSetLocation).toFile())
                 .createDefaultFileAppendJobGenerator()
-                .getTaskStream(new DataSet(new HashMap<>(), aimedDataStatus.getFileSizeInMB()), aimedDataStatus)
+                .getTaskStream(currentState, update)
                 .parallel()
                 .peek(t -> logger.info("adding new task to executor service :" + t.toString()))
                 .forEach(FileAppenderTask::run);
     }
 
-    private void validateFileSize() {
-        if(maxFileSizeInMB <=0)
-            throw new IllegalArgumentException("file size must be positive");
-    }
-
     private RandomLineGenerator createRandomLineGenerator() {
         return new AlphanumericStringGenerator(new Random(), CHARS_PER_LINE );
     }
+
+
 
 
 

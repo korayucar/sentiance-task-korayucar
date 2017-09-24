@@ -33,7 +33,7 @@ public class DefaultFileAppendJobGenerator implements  FileAppendJobGenerator{
         Integer oldDataSize  = Optional.ofNullable(original.getDataSizes().get(folder)).orElse(0);
         Integer newDataSize  = oldDataSize + Optional.ofNullable(updateDefinition.getDataSizes().get(folder)).orElse(0);
         Integer sizePerFile = original.getFileSizeInMB();
-        if(oldDataSize <= newDataSize)
+        if(oldDataSize >= newDataSize)
             return Stream.empty();
         int sizeOfLastIncomleteFileIfExist = oldDataSize % sizePerFile;
         boolean thereWasInCompleteFile = sizeOfLastIncomleteFileIfExist != 0;
@@ -42,7 +42,7 @@ public class DefaultFileAppendJobGenerator implements  FileAppendJobGenerator{
         if(thereWasInCompleteFile)
             tasksOfFolder.add(getTaskBuilderSeed()
                     .setDestinationFile(Paths.get(masterDataSet.toPath().toString(), folder, getFileNameByIndex(oldCompleteFileCount + 1)).toFile())
-                    .setTargetIncrementInBytes(((long)newSizeOfLastOldFile - sizeOfLastIncomleteFileIfExist)*DataSizeUnit.MAGA_BYTE.getBytesPerUnit())
+                    .setTargetIncrementInBytes(mbToBytes((long)newSizeOfLastOldFile - sizeOfLastIncomleteFileIfExist))
             .createFileAppenderTask());
         int numberOfNewCompleteFiles = thereWasInCompleteFile ? Math.max(0,(newDataSize - (oldCompleteFileCount+1)*sizePerFile)/sizePerFile) : (newDataSize-oldDataSize)/sizePerFile;
         int indexOfFirstCompleteNewFile = thereWasInCompleteFile? oldCompleteFileCount+2 : oldCompleteFileCount+1;
@@ -51,11 +51,15 @@ public class DefaultFileAppendJobGenerator implements  FileAppendJobGenerator{
         return tasksOfFolder.stream();
     }
 
+    long mbToBytes(long mb){
+        return mb*DataSizeUnit.MAGA_BYTE.getBytesPerUnit();
+    }
+
     private void checkForNewCompleteFiles(String folder, List<FileAppenderTask> tasksOfFolder, Integer sizePerFile, int numberOfNewCompleteFiles, int indexOfFirstCompleteNewFile) {
         for(int j = 0 ;j < numberOfNewCompleteFiles; j++)
             tasksOfFolder.add(getTaskBuilderSeed()
                     .setDestinationFile(Paths.get(masterDataSet.toPath().toString(), folder, getFileNameByIndex(indexOfFirstCompleteNewFile + j)).toFile())
-                    .setTargetIncrementInBytes(sizePerFile)
+                    .setTargetIncrementInBytes(mbToBytes(sizePerFile))
                     .createFileAppenderTask());
     }
 
@@ -64,7 +68,7 @@ public class DefaultFileAppendJobGenerator implements  FileAppendJobGenerator{
         if(newDataSize - oldDataSize > sizePerFile && sizeOfNewIncompleteFile !=0)
             tasksOfFolder.add(getTaskBuilderSeed()
                     .setDestinationFile(Paths.get(masterDataSet.toPath().toString(), folder, getFileNameByIndex(newDataSize/sizePerFile +1)).toFile())
-                    .setTargetIncrementInBytes(sizeOfNewIncompleteFile)
+                    .setTargetIncrementInBytes(mbToBytes(sizeOfNewIncompleteFile))
                     .createFileAppenderTask());
     }
 

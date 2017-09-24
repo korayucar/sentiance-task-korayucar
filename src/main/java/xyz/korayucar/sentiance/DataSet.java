@@ -1,5 +1,6 @@
 package xyz.korayucar.sentiance;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -10,6 +11,11 @@ public class DataSet {
 
     Map<String, Integer> dataSizes;
     int fileSizeInMB;
+
+    public DataSet(DataSet dataSet) {
+        dataSizes = new HashMap<>(dataSet.getDataSizes());
+        fileSizeInMB = dataSet.getFileSizeInMB();
+    }
 
     public void incrementDataSize(String folderName, int delta){
         if(delta <=0)

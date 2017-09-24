@@ -7,7 +7,6 @@ import xyz.korayucar.sentiance.generator.RandomLineGenerator;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 
 /**
  * Created by koray on 24/09/17.
@@ -39,7 +38,7 @@ public class FileAppenderTask implements Runnable {
                 .peek(s -> currentDataInBytes += 1 + calculator.calculateApproximateSizeInEncoding(s, DataSizeUnit.BYTE, encoding).longValue())
                 .peek(l -> {
                     try {
-                        FileUtils.writeStringToFile(destinationFile, l, Charset.forName(encoding.getCharsetName()) + "\n", true);
+                        FileUtils.writeStringToFile(destinationFile, l + "\n", encoding.getCharsetName(), true);
                     } catch (IOException e) {
                         throw new IllegalStateException("Unable to append to destination file", e);
                     }
@@ -50,9 +49,18 @@ public class FileAppenderTask implements Runnable {
 
     private void createFileIfNotExist() {
         try {
+            destinationFile.getParentFile().mkdirs();
             destinationFile.createNewFile();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create destination file " + destinationFile.toString());
         }
+    }
+
+    @Override
+    public String toString() {
+        return "FileAppenderTask{" +
+                "destinationFile=" + destinationFile +
+                ", targetIncrementInBytes=" + targetIncrementInBytes +
+                '}';
     }
 }
