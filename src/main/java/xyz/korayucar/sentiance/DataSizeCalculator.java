@@ -1,7 +1,6 @@
 package xyz.korayucar.sentiance;
 
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 
 /**
@@ -9,6 +8,6 @@ import java.math.BigDecimal;
  */
 public interface DataSizeCalculator {
 
-    BigDecimal calculateApproximateSizeInEncoding( String data, DataSizeUnit unit,  SupportedEncoding encoding) throws UnsupportedEncodingException;
+    BigDecimal calculateApproximateSizeInEncoding( String data, DataSizeUnit unit,  SupportedEncoding encoding);
 
 }

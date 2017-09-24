@@ -108,7 +108,7 @@ In general there is a trade off between the level confidence on the correctness 
 2. We can retrieve up to ten closest searches previously made that are closest the new query location regardless of accuracy. After that we find the convex hull of these up to ten search locations. Then we calculate a score on the confidence based on the distance from convex hull to the new search point and if it is inside or outside. We can also elaborate with the freshness of old searches. Since this query is not a range query it eliminates some complexity from the cache layer. Note that; even if it is inside the convex hull, too big of a distance is not a positive trait.
 
 #### The accuracy of GPS signal.
-Obviously the inaccuracy cannot be eliminated. Simple client side improvements can be applied like collecting multiple data points, keeping last accurate signal for some time etc. But the GPS inaccuracy is inherent so not much we can do about it except enhancing confidence calculations by it.
+Obviously the inaccuracy cannot be eliminated. Simple client side improvements can be applied like collecting multiple data points, keeping last accurate signal for some time etc. But the GPS inaccuracy is inherent; so there is not much we can do about it, except enhancing confidence calculations by it.
 
 #### The Geospatial Cache Mechanism
 This cache mechanism is just a geospatial database in essence. I am not well informed on GIS but I presume there are external tools that can provide it. There is a menu in wikipedia to choose from [here](https://en.wikipedia.org/wiki/Spatial_database). I can not comment on pros and cons of them. However; if decision is made to manually implement geospatial algorithm it can be made easily on top of an arbitrary data storage also. It is important to note that implementing indexing logic outside the actual data storage machine will have significant performance costs.
@@ -124,7 +124,7 @@ Implementation of an R-Tree will satisfy all our needs including the optional on
 
 ### For The Bonus
 
-I am not able to see the algorithmic challange in this. Simplest implementation would be to find the closest one to the location. That is a linear search. That is O(N) time. There can still be many factors like the venue popularity, time of the day, query makers histroical behaviour, a feedback data that reports mismatches etc. With the additional data, mapping can be improved with learning techniques. As long as the data is limited to 1 query location and n venue locations I don't have anything better than choosing the closest one. One little point is that finding the exact distance between two points is expensive computationally. We can even eliminate the need to use multiplication if approximations are acceptable. If we can sacrifice correctness in edge cases, we can use octagonal boundaries to do the comparison. Otherwise ; this:
+I am not able to see the algorithmic challange in this. Simplest implementation would be to find the closest one to the location. That is a linear search. That is O(N) time. There can still be many factors like the venue popularity, time of the day, query makers histroical behaviour, a feedback data that reports mismatches etc. With the additional data, mapping can be improved with learning techniques. As long as the data is limited to 1 query location and n venue locations I don't have anything better than choosing the closest one. One little point is that finding the exact distance between two points is expensive computationally. Square root operation can be eliminated. We can even eliminate the need to use multiplication if approximations are acceptable. If we can sacrifice correctness in edge cases, we can use octagonal boundaries to do the comparison. Otherwise ; this:
 
 ```java
 function findVenue(Location query, List<Location> venues){
@@ -144,7 +144,7 @@ private int getDistanceIndicator(Location v, Location p) {
 
 ```
 
-![See the diagram. If you dont have a proper reader open the file named system_design_diagram.png](system_design_diagram.png)
+![See the diagram. If you don't have a proper markdown reader open the file named system_design_diagram.png](system_design_diagram.png)
 
 
 

@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * Created by koray on 24/09/17.
  */
-public class DataSetStatus {
+public class DataSet {
 
     Map<String, Integer> dataSizes;
     int fileSizeInMB;
@@ -21,16 +21,16 @@ public class DataSetStatus {
 
     }
 
-    public void incrementDataSize(DataSetStatus other){
+    public void incrementDataSize(DataSet other){
         Objects.nonNull(other);
         other.getDataSizes().forEach(this::incrementDataSize);
     }
 
-    public DataSetStatus(Map<String, Integer> dataSizes) {
+    public DataSet(Map<String, Integer> dataSizes) {
         this.dataSizes = dataSizes;
     }
 
-    public DataSetStatus(Map<String, Integer> dataSizes,int fileSizeInMB) {
+    public DataSet(Map<String, Integer> dataSizes, int fileSizeInMB) {
         this.dataSizes = dataSizes;
         this.fileSizeInMB = fileSizeInMB;
     }
@@ -55,7 +55,7 @@ public class DataSetStatus {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        DataSetStatus that = (DataSetStatus) o;
+        DataSet that = (DataSet) o;
         return Objects.equals(fileSizeInMB, that.fileSizeInMB) &&
                 Objects.equals(dataSizes, that.dataSizes);
     }

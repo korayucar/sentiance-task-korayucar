@@ -13,4 +13,8 @@ public enum SupportedEncoding {
     SupportedEncoding(String charsetName) {
         this.charsetName = charsetName;
     }
+
+    public String getCharsetName() {
+        return charsetName;
+    }
 }

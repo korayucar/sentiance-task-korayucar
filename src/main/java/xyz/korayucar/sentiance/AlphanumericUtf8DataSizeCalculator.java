@@ -1,6 +1,5 @@
 package xyz.korayucar.sentiance;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.util.Objects;
 
@@ -10,12 +9,12 @@ import java.util.Objects;
 public class AlphanumericUtf8DataSizeCalculator implements DataSizeCalculator
 {
     @Override
-    public BigDecimal calculateApproximateSizeInEncoding(String data, DataSizeUnit unit, SupportedEncoding encoding) throws UnsupportedEncodingException {
+    public BigDecimal calculateApproximateSizeInEncoding(String data, DataSizeUnit unit, SupportedEncoding encoding){
         Objects.nonNull(data);
         Objects.nonNull(encoding);
         if(SupportedEncoding.ALPHANUMERIC_UTF_8.equals(encoding))
             return new BigDecimal(data.length() ).divide(new BigDecimal( unit.getBytesPerUnit()), BigDecimal.ROUND_UNNECESSARY);
         else
-            throw new UnsupportedEncodingException("unrecognized encoding type");
+            throw new UnsupportedOperationException("Unrecognized encoding type.");
     }
 }
