@@ -1,7 +1,6 @@
 test/
 
 
-
 ide# Created by .ignore support plugin (hsz.mobi)
 ### Python template
 # Byte-compiled / optimized / DLL files
@@ -107,9 +106,6 @@ build/
 # Ignore Gradle GUI config
 gradle-app.setting
 
-# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
-!gradle-wrapper.jar
-
 # Cache of project
 .gradletasknamecache
 
@@ -166,4 +162,8 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+
+# Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
+!gradle-wrapper.jar
 
