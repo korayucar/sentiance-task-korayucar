@@ -30,8 +30,8 @@ public class GenerateMasterDataSet {
     @Parameter(required = true)
     String masterDataSetLocation;
 
-    @Parameter(required = true , names="-size")
-    int length;
+    @Parameter(required = true , names="-maxFileSizeInMB")
+    int maxFileSizeInMB;
 
     @Parameter(required = true,names="-data")
     String dataFolders;
@@ -43,10 +43,16 @@ public class GenerateMasterDataSet {
     }
 
     private void run() {
-        DataSetStatus dataStatus = parseDataSizes();
         checkMasterDataDirectory();
+        validateFileSize();
+        DataSetStatus dataStatus = parseDataSetStatus();
         writeAimedDataSetStatusToMetadata(dataStatus);
         RandomLineGenerator generator = createRandomLineGenerator();
+    }
+
+    private void validateFileSize() {
+        if(maxFileSizeInMB <=0)
+            throw new IllegalArgumentException("file maxFileSizeInMB must be positive");
     }
 
     private RandomLineGenerator createRandomLineGenerator() {
@@ -68,21 +74,26 @@ public class GenerateMasterDataSet {
             throw new IllegalStateException("Master data set directory is non empty and contains data.");
     }
 
-    private DataSetStatus parseDataSizes() {
+    private DataSetStatus parseDataSetStatus() {
         logger.info("parsing folder sizes.");
         Map<String, Integer> dataSizes = new HashMap<>();
         String[] dataFolderParams = dataFolders.split(PARAMETER_DELIMETER);
         if(dataFolderParams.length %2 != 0)
-            throw new IllegalArgumentException("Each folder must have a matching data size defined.");
+            throw new IllegalArgumentException("Each folder must have a matching data maxFileSizeInMB defined.");
+        populateDataSizes(dataSizes, dataFolderParams);
+        return new DataSetStatus(dataSizes, maxFileSizeInMB);
+    }
+
+    private void populateDataSizes(Map<String, Integer> dataSizes, String[] dataFolderParams) {
         for(int i = 0 ; i < dataFolderParams.length ; i+=2) {
             if (dataFolderParams[i].isEmpty())
                 throw new IllegalArgumentException("Empty folder name is not allowed.");
             try {
                     dataSizes.put(dataFolderParams[i], Integer.parseInt(dataFolderParams[i+1]));
             }catch (NumberFormatException e){
-                throw new IllegalArgumentException(" Data size must be a number", e);
+                throw new IllegalArgumentException(" Data maxFileSizeInMB must be a number", e);
             }
         }
-        return new DataSetStatus(dataSizes);
     }
+
 }

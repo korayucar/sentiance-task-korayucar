@@ -9,6 +9,7 @@ import java.util.Objects;
 public class DataSetStatus {
 
     Map<String, Integer> dataSizes;
+    int fileSizeInMB;
 
     public void incrementDataSize(String folderName, int delta){
         if(delta <=0)
@@ -20,13 +21,18 @@ public class DataSetStatus {
 
     }
 
-    public void incrementDataSize( DataSetStatus other){
+    public void incrementDataSize(DataSetStatus other){
         Objects.nonNull(other);
         other.getDataSizes().forEach(this::incrementDataSize);
     }
 
     public DataSetStatus(Map<String, Integer> dataSizes) {
         this.dataSizes = dataSizes;
+    }
+
+    public DataSetStatus(Map<String, Integer> dataSizes,int fileSizeInMB) {
+        this.dataSizes = dataSizes;
+        this.fileSizeInMB = fileSizeInMB;
     }
 
     public Map<String, Integer> getDataSizes() {
@@ -37,16 +43,25 @@ public class DataSetStatus {
         this.dataSizes = dataSizes;
     }
 
+    public int getFileSizeInMB() {
+        return fileSizeInMB;
+    }
+
+    public void setFileSizeInMB(int fileSizeInMB) {
+        this.fileSizeInMB = fileSizeInMB;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DataSetStatus that = (DataSetStatus) o;
-        return Objects.equals(dataSizes, that.dataSizes);
+        return Objects.equals(fileSizeInMB, that.fileSizeInMB) &&
+                Objects.equals(dataSizes, that.dataSizes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(dataSizes);
+        return Objects.hash(dataSizes, fileSizeInMB);
     }
 }

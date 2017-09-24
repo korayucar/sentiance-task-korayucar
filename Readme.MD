@@ -16,7 +16,7 @@
 * File encoding is not configurable. I used UTF-8. My code also knows how to calculate UTF-8 file size only. Code is extensible though. 
 * Length of each line is irrelevant. Keeping them of cosntant legnth is ok.
 * Filenames are irrelevant.
-* I can put some lock and metadata in to the master data set directory. 
+* I can put metadata in to the master data set directory. 
 * Standard file system is used in implementation but simple refactor will enable the use of network file systems. Relevant abstractions are made in code. Design discussion avoids this assumption.
 * Storage medium allows multiple appenders.
 * Tester has unix like environment.
@@ -47,7 +47,7 @@ A file append task is defined for this purpose. The file appender task does not 
 #### Use of Shared Metadata
 **rationale:** It is possible that for any given time there are ongoing data generation or data update tasks being executed for the given master data set. Thus the current size of the files can not be used to determine the state of a folder or master data set.
 
-A minimal metadata is defined. Metadata is atomically written and read with a lock mechanism. Metadata is locked briefly while the new state of the master data set is calculated. Thus there is almost no performance hit.
+A minimal metadata is defined and persisted to root directory. 
   
 #### Precalculation of Datasize
 **rationale:** It is possible to query the file system to monitor file size. That would not work in this case because there may be multiple appenders writing to the same file simultaneously. Querying file system for data size change on a file does cannot reveal how much of the additional data is written by each task. Also that will be an extra hit on the filesystem that is possibly the bottleneck.
@@ -73,6 +73,9 @@ There is not retry mechanism implemented in the assignment but there are multipl
 
 7. In memory producer/queue/consumer/storage mechanism is implemented. All queue and consumer mechanism can be externalized for enforced modularity instead of soft modularity.
 
+8. Metadata should be atomically written and read with a lock mechanism. Metadata is locked briefly while the new state of the master data set is calculated. Thus there is almost no performance hit. This issue is gone if a proper ACID db is used.
+
+
 
 
 ### 1.1 Data Generation
@@ -96,14 +99,24 @@ There is not retry mechanism implemented in the assignment but there are multipl
 
 I propose a caching layer in front of foursquare api. This caching layer will update from foursquare api whenever there is a cold miss on the cache. The caching layer has to be a best effort since it has no way of knowing a new venue has been added to the foursquare api or one is removed.
 
-This cache layer will hold 2 kinds of geospatial data. One of them holds the records of venues received from foursquare the other holds the previous requests sent to the foursquare API. Both cache storages should support;
+Cache layer will hold 2 kinds of geospatial data. One of them holds the records of venues received from foursquare the other holds the previous requests sent to the foursquare API. Both cache storages should support;
 * Efficient range query. I our case the range is a circle by the nature of GPS but the optimisation to use smallest enclosing rectangle will help with the simplicity/efficiency of spatial indexing.
-* Maximum time to live of 30 days.
+* Maximum time to live of 30 days. That is automatically handled by the cache.
+* Optionally caching layers can be synchronised for added reliability. Whenever we query the venues all results of all the queries in queries cache should be available in venue cache. This will create additional engineering complexity so this will require cost/benefit analysis. We need to make transactional updates to both caches to keep them correct at all times. For example if I am able to delete all caches safely in case of an incident I would not like to maintain consistency.
+
+In general there is a trade off between the confidence of the correctness of cache hit and the number of requests sent to the foursquare api. We can not make the trade of go away but we can implement confidence calculation strategies that allows us to chose how much of each we prefer. To be able to make this configurable we should be able to calculate the confidence on cache hit. The higher the confidence level we want the more times we will query the foursquare api and them more data we will keep in our caches. There are arbitrarily many ways of doing it, I will propose 2;
+1. We can retrieve all the previous searches that inside the circle defined by accuracy/location pair. We can assign  predetermined coeeficients to the contribition of depending on how long before those searches has been made and how far away the search has been made. Average of top three contributors is the confidence level that our venue cache has the data.
+2. We can retrieve up to ten closest searches previously made that are closest the new query location regardless of accuracy. After that we find the convex hull of these up to ten search locations. Then we calculate a score on the confidence based on the distance from convex hull to the new search point and if it is inside or outside. We can also elaborate with the freshness of old searches. Since this query is not a range query it eliminates some complexity from the cache layer.
+
 
 ### Methods to Improve Accuracy/Performance.
+1. When we query for the previous queries of which the venues are cached the accuracy value may be too high, consequently if we query with an area the number of hits should be limited to a number. Also search mechanism should be smart enough to stop searching in a smaller radious many matches has already been found.
+2. A mechanism can be implemented for invalidating unreliable caches in order to keep them up to date. I.e. If this is available to the end user and there is a signal that the result was wrong cache invalidation should be applied. For example such signal may be immediate refresh of the query by the end user.
+3. A mechanism can be implemented to warm up cache at times query to the foursquare api cheaper than usual (literally cheaper, or in a period we are far away from the api throttling limits).
+4. A mechanism can be implemented to initialize the cache with equidistant queries.
+5. 
 
-
-![System Design](system_design_diagram.png)
+![See the diagram. If you dont have a proper reader open the file named system_design_diagram.png](system_design_diagram.png)
 
 
 
