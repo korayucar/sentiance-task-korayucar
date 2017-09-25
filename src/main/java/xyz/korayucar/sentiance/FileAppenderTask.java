@@ -12,8 +12,6 @@ import java.io.IOException;
  * Created by koray on 24/09/17.
  */
 public class FileAppenderTask implements Runnable {
-
-
     Logger logger = LogManager.getLogger(FileAppenderTask.class);
 
     File destinationFile;
