@@ -10,11 +10,11 @@ public class GenerateMasterDataSetUnitTest {
 
     @Test(expected = IllegalArgumentException.class )
     public void main_IncorrectLengthOfParameters_FailsProperly() throws Exception {
-        GenerateMasterDataSet.main("xxxx", "-size", "2", "-data","xx,5,yy,7,ff");
+        GenerateMasterDataSet.main("test/xxxx", "-size", "2", "-data","xx,5,yy,7,ff");
     }
 
     @Test(expected = IllegalArgumentException.class )
     public void main_EmptyFolderName_FailsProperly() throws Exception {
-        GenerateMasterDataSet.main("xxxx", "-size", "2", "-data","xx,5,,7");
+        GenerateMasterDataSet.main("test/xxxx", "-size", "2", "-data","xx,5,,7");
     }
 }

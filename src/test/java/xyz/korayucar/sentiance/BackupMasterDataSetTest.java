@@ -23,7 +23,7 @@ public class BackupMasterDataSetTest {
 
     @Test(expected = FileNotFoundException.class)
     public void main_NonExistentMasterDataSet_FailsProperly() throws Exception {
-        BackupMasterDataSet.main("/xxxx","-destination","ssss");
+        BackupMasterDataSet.main("/test/xxxx","-destination","ssss");
     }
 
     @Test
